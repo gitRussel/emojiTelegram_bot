@@ -17,6 +17,7 @@ namespace EmojiTelegramBot.Application
         public ChannelsQueuePubSub(int threads, ILogger logger)
         {
             _logger = logger;
+            tasks = new List<Task>();
 
             var channel = Channel.CreateUnbounded<IJob>();
 
