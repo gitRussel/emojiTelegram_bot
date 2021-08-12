@@ -19,9 +19,11 @@ namespace EmojiTelegramBot.Jobs
             Logger = logger;
         }
 
-        public async Task<string> DoJobAsync()
+        public async Task<JobResult> DoJobAsync()
         {
             string pathToGif = Path.ChangeExtension(args[0], ".gif");
+            var result = new JobResult(pathToGif, long.Parse(args[2]));
+
             await Task.Run(() =>
             {
                 float x = 0;
@@ -62,7 +64,7 @@ namespace EmojiTelegramBot.Jobs
                     Logger.Error($"Error when saving file: {ex.Message}");
                 }
             });
-            return pathToGif;
+            return result;
         }
 
     }

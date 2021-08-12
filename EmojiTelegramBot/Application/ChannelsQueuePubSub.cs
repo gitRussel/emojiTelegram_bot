@@ -14,6 +14,7 @@ namespace EmojiTelegramBot.Application
         private ChannelWriter<IJob> _writer;
         private Dictionary<Type, Action<IJob>> _handlers = new Dictionary<Type, Action<IJob>>();
         private List<Task> tasks;
+
         public ChannelsQueuePubSub(int threads, ILogger logger)
         {
             _logger = logger;

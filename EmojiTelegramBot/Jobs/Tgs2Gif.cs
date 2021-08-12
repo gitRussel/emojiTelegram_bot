@@ -20,20 +20,21 @@ namespace EmojiTelegramBot.Jobs
             this.args = args;
         }
 
-        public async Task<string> DoJobAsync()
+        public async Task<JobResult> DoJobAsync()
         {
             string pathToGif = Path.ChangeExtension(args[0], ".gif");
+            var result = new JobResult(pathToGif, long.Parse(args[1]));
 
             int commandResult = await ProcessCommandAsync(args);
 
             if (commandResult == 0)
             {
                 Logger.Info($"File is ready {pathToGif}");
-                return pathToGif;
+                return result;
             }
             else
             {
-                return "-1";
+                return new JobResult("-1", 0); 
             }
         }
 

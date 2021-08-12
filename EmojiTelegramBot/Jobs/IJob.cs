@@ -13,6 +13,6 @@ namespace EmojiTelegramBot.Jobs
         /// <summary>
         /// Do converting async
         /// </summary>
-        Task<string> DoJobAsync();
+        Task<JobResult> DoJobAsync();
     }
 }

@@ -5,6 +5,7 @@ using MihaZupan;
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Args;
@@ -18,102 +19,93 @@ namespace EmojiTelegramBot.Application
 	///<inheritdoc cref="IApplicationService"/>
 	public class ApplicationService : IApplicationService
 	{
-		private ITelegramBotClient botClient;
-		private ChannelsQueuePubSub queue;
-		private Chat chatId;
-		private IConfiguration config;
-		private ILogger logger;
-		private ILoggerService loggerSvc;
-		private readonly object chatLock = new object();
+		private ITelegramBotClient _botClient;
+		private ChannelsQueuePubSub _queue;
+		private static Mutex _mut = new Mutex();
+		private static object _chatLock = new object();
+		private IConfiguration _config;
+		private ILogger _logger;
+		private ILoggerService _loggerSvc;
 
 		public ApplicationService(
 			ILoggerService loggerService,
 			IConfiguration configuration)
 		{
-			loggerSvc = loggerService;
-			logger = loggerSvc.Create("Application");
-			config = configuration;
+			_loggerSvc = loggerService;
+			_logger = _loggerSvc.Create("Application");
+			_config = configuration;
 			try
 			{
-				var proxy = new HttpToSocks5Proxy(config.ProxyHostName, config.ProxyPort);
-				botClient = new TelegramBotClient(config.ApiBotToken, proxy) { Timeout = TimeSpan.FromSeconds(20) };
-				queue = new ChannelsQueuePubSub(config.ParallelCount, logger);
+				var proxy = new HttpToSocks5Proxy(_config.ProxyHostName, _config.ProxyPort);
+				_botClient = new TelegramBotClient(_config.ApiBotToken, proxy) { Timeout = TimeSpan.FromSeconds(20) };
+				_queue = new ChannelsQueuePubSub(_config.ParallelCount, _logger);
 			}
 			catch (Exception ex)
 			{
-				logger.Error($"Error with bot registration: {ex.Message}");
+				_logger.Error($"Error with bot registration: {ex.Message}");
 			}
 
-		}
-
-		private Chat GetChat()
-		{
-			lock (chatLock)
-			{
-				return chatId;
-			}
 		}
 
 		public async Task Run(string[] args)
 		{
-			User me = await botClient.GetMeAsync();
+			User me = await _botClient.GetMeAsync();
 
-			logger.Info($"Started bot with id {me.Id}, named {me.FirstName}.");
+			_logger.Info($"Started bot with id {me.Id}, named {me.FirstName}.");
 
-			botClient.OnMessage += BotOnMessageReciving;
-			botClient.StartReceiving();
+			_botClient.OnMessage += async (s, e) => await BotOnMessageReciving(s, e);
+			_botClient.StartReceiving();
 
-			queue.RegisterHandler<Tgs2Gif>(async j =>
+			_queue.RegisterHandler<Tgs2Gif>(async j =>
 			{
-				string convertingResult = await j.DoJobAsync();
-				if (convertingResult == "-1")
+				var result = j.DoJobAsync().Result;
+				if (result.PathToGif == "-1")
 				{
-					await SendWarnMessage("Convert is failed.");
+					await SendWarnMessage("Convert is failed.", result.ChatId);
 				}
 				else
 				{
-					await UploadGifFileAsync(convertingResult);
+					await UploadGifFileAsync(result.PathToGif, result.ChatId);
 				}
 			});
-			queue.RegisterHandler<UnicodeEmoji2Gif>(async j =>
+			_queue.RegisterHandler<UnicodeEmoji2Gif>(async j =>
 			{
-				string filePath = await j.DoJobAsync();
-				await UploadGifFileAsync(filePath);
+				var result = j.DoJobAsync().Result;
+				await UploadGifFileAsync(result.PathToGif, result.ChatId);
 			});
-			queue.RegisterHandler<Webp2Gif>(async j =>
+			_queue.RegisterHandler<Webp2Gif>(async j =>
 			{
-				string filePath = await j.DoJobAsync();
-				await UploadGifFileAsync(filePath);
+				var result = j.DoJobAsync().Result;
+				await UploadGifFileAsync(result.PathToGif, result.ChatId);
 			});
 
 			Console.WriteLine("Press 'q' to quit the sample.");
 			while (Console.Read() != 'q') ;
-			botClient.StopReceiving();
-			queue.Stop();
+			_botClient.StopReceiving();
+			_queue.Stop();
 		}
 
-		private async void BotOnMessageReciving(object sender, MessageEventArgs e)
+		private async Task BotOnMessageReciving(object sender, MessageEventArgs e)
 		{
-			lock (chatLock)
-			{
-				chatId = e.Message.Chat;
-			}
+			var chat = e.Message.Chat;
+			_logger.Info($"Thread {Thread.CurrentThread.ManagedThreadId} has entered the protected area with chatid {chat.Id}.");
 
 			Sticker sticker = e?.Message?.Sticker;
 			string text = e?.Message?.Text;
 
 			if (sticker == null && text == null)
 			{
-				await SendWarnMessage("Send a sticker(animated or static) or unicode emoji.");
+				await SendWarnMessage("Send a sticker(animated or static) or unicode emoji.", chat.Id);
 				return;
 			}
 
-			await TextOperationsAsync(text);
+			await TextOperationsAsync(text, chat);
 
-			await StickerOperationsAsync(sticker);
+			await StickerOperationsAsync(sticker, chat);
+
 		}
 
-		private async Task StickerOperationsAsync(Sticker sticker)
+		private async Task StickerOperationsAsync(Sticker sticker, Chat chat)
 		{
 			IJob job = null;
 			string[] args;
@@ -124,40 +116,53 @@ namespace EmojiTelegramBot.Application
 				return;
 			}
 
-			string pathToGifFile = Path.Combine(config.PathToGifDirectory, $"{sticker.FileUniqueId}.gif");
+			string pathToGifFile = Path.Combine(_config.PathToGifDirectory, $"{sticker.FileUniqueId}.gif");
 			if (File.Exists(pathToGifFile))
 			{
-				logger.Info($"This file ({Path.GetFullPath(pathToGifFile)}) already exists in the cache folder.");
-				await UploadGifFileAsync(pathToGifFile);
+				_logger.Info($"This file ({Path.GetFullPath(pathToGifFile)}) already exists in the cache folder.");
+				await UploadGifFileAsync(pathToGifFile, chat.Id);
 			}
 			else
 			{
-				pathToImportFile = Path.Combine(config.PathToGifDirectory, $"{sticker.FileUniqueId}");
+				pathToImportFile = Path.Combine(_config.PathToGifDirectory, $"{sticker.FileUniqueId}");
 
 				if (sticker.IsAnimated)
 				{
 					pathToImportFile += ".tgs";
-					args = new string[] { pathToImportFile };
-					job = new Tgs2Gif(args, logger);
+					args = new string[] { pathToImportFile, chat.Id.ToString() };
+					job = new Tgs2Gif(args, _logger);
 				}
 				else
 				{
 					pathToImportFile += ".webp";
-					args = new string[] { pathToImportFile };
+					args = new string[] { pathToImportFile, chat.Id.ToString() };
 					job = new Webp2Gif(args);
 				}
 
-				// Download file from Telegram
-				using (var output =  File.Open(pathToImportFile, FileMode.OpenOrCreate))
+				const int numberOfRetries = 3;
+				const int delayOnRetry = 10 * 1000;
+				for (int i = 0; i < numberOfRetries; i++)
 				{
-					_ = await botClient.GetInfoAndDownloadFileAsync(sticker.FileId, output);
+					try
+					{
+						// Download file from Telegram
+						using (var output = File.Open(pathToImportFile, FileMode.OpenOrCreate))
+						{
+							_ = await _botClient.GetInfoAndDownloadFileAsync(sticker.FileId, output);
+						}
+					}
+					catch (IOException e) when (i < numberOfRetries)
+					{
+						_logger.Error(e.Message);
+						Thread.Sleep(delayOnRetry);
+					}
 				}
 
-				await queue.Enqueue(job);
+				await _queue.Enqueue(job);
 			}
 		}
 
-		private async Task TextOperationsAsync(string text)
+		private async Task TextOperationsAsync(string text, Chat chat)
 		{
 			if (text == null)
 				return;
@@ -171,37 +176,39 @@ namespace EmojiTelegramBot.Application
 
 			if (matches.Count <= 0)
 			{
-				await SendWarnMessage("Send a sticker(animated or static) or unicode emoji.");
+				await SendWarnMessage("Send a sticker(animated or static) or unicode emoji.", chat.Id);
 				return;
 			}
 
 			foreach (Match match in matches)
 			{
-				string pathToGifFile = Path.Combine(config.PathToGifDirectory, $"{match.Value.GetHashCode()}.gif");
+				string pathToGifFile = Path.Combine(_config.PathToGifDirectory, $"{match.Value.GetHashCode()}.gif");
 
 				if (System.IO.File.Exists(pathToGifFile))
 				{
-					logger.Info($"This file ({Path.GetFullPath(pathToGifFile)}) already exists in the cache folder.");
-					await UploadGifFileAsync(pathToGifFile);
+					_logger.Info($"This file ({Path.GetFullPath(pathToGifFile)}) already exists in the cache folder.");
+					await UploadGifFileAsync(pathToGifFile, chat.Id);
 				}
 				else
 				{
-					args = new string[] { pathToGifFile, match.Value }; ;
-					job = new UnicodeEmoji2Gif(args, logger);
+					args = new string[] { pathToGifFile, match.Value, chat.Id.ToString() }; ;
+					job = new UnicodeEmoji2Gif(args, _logger);
 
-					await queue.Enqueue(job);
+					await _queue.Enqueue(job);
 				}
 			}
 		}
 
-		private async Task UploadGifFileAsync(string filePath)
+		private async Task UploadGifFileAsync(string filePath, long chatId)
 		{
 			try
 			{
 				using (Stream stream = File.OpenRead(filePath))
 				{
-					_ = await botClient.SendAnimationAsync(
-						chatId: GetChat(),
+					_logger.Info($"Thread {Thread.CurrentThread.ManagedThreadId} sending animation to chat {chatId}");
+
+					_ = await _botClient.SendAnimationAsync(
+						chatId: chatId,
 						animation: new InputOnlineFile(stream, Path.GetFileName(filePath)),
 						disableNotification: true
 						).ConfigureAwait(false);
@@ -209,23 +216,23 @@ namespace EmojiTelegramBot.Application
 			}
 			catch (ApiRequestException ex)
 			{
-				logger.Error($"There was an error sendin. {ex.Message}");
-				botClient.StartReceiving();
+				_logger.Error($"There was an error sendin. {ex.Message}");
+				_botClient.StartReceiving();
 			}
 		}
 
-		private async Task SendWarnMessage(string message)
+		private async Task SendWarnMessage(string message, long chatId)
 		{
 			try
 			{
-				_ = await botClient.SendTextMessageAsync(
-						 chatId: GetChat(),
+				_ = await _botClient.SendTextMessageAsync(
+						 chatId: chatId,
 						 text: message
 						 ).ConfigureAwait(false);
 			}
 			catch (ApiRequestException ex)
 			{
-				logger.Error($"Catch exception when send a message \n {ex.Message}");
+				_logger.Error($"Catch exception when send a message \n {ex.Message}");
 			}
 		}
 	}
