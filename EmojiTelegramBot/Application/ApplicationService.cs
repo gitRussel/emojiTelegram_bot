@@ -32,8 +32,12 @@ namespace EmojiTelegramBot.Application
 			_loggerSvc = loggerService;
 			_logger = _loggerSvc.Create("Application");
 			_config = configuration;
+
 			try
 			{
+				//_logger.Info($"Config was token {_config.ApiBotToken} proxy {_config.ProxyHostName}:{_config.ProxyPort} " + Environment.NewLine +
+				//$"threads count {_config.ParallelCount} and path to gif files {_config.PathToGifDirectory}");
+
 				var proxy = new HttpToSocks5Proxy(_config.ProxyHostName, _config.ProxyPort);
 				_botClient = new TelegramBotClient(_config.ApiBotToken, proxy) { Timeout = TimeSpan.FromSeconds(20) };
 				_queue = new ChannelsQueuePubSub(_config.ParallelCount, _logger);
