@@ -8,19 +8,10 @@
  2. `/newbot`, **BotFather** запросит имя нового бота;
  3. Он выдаст токен, который нам вскоре пригодится.
 ## Конфигурация проекта ##
-В корне проекта находится файл **App.config**, его структура представлена ниже: 
-```xml
-<?xml version="1.0" encoding="utf-8" ?>
-<configuration>
-  <appSettings>
-    <add key="ParallelCount" value="10"/>
-    <add key="PathToGifDirectory" value="/Gifs"/>
-    <add key="ProxyHostName" value="96.113.166.133"/>
-    <add key="ProxyPort" value="1080"/>
-    <add key="ApiBotToken" value="PUT_YOUR_BOT_TOKEN_HERE"/>
-  </appSettings>
-</configuration>
-```
+В корне проекта находится файл **secrets.json** (подробнее в [документации](https://docs.microsoft.com/en-us/aspnet/core/security/app-secrets?view=aspnetcore-5.0&tabs=windows)), его структура представлена ниже: 
+
+![secrets_config](https://user-images.githubusercontent.com/28735314/129339147-8ef4e08b-b4fb-4819-8a64-757c9ba83285.jpg)
+
 + Где ParallelCount — количество потоков в очереди обработки;
 + PathToGifDirectory — директория куда будут сохранятся, кэшироваться gif-анимации;
 + ProxyHostName — ip-адрес прокси-сервера для обхода блокировки в России;
