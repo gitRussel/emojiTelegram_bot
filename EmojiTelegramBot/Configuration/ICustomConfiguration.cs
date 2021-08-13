@@ -3,7 +3,7 @@
     /// <summary>
     /// Configuration
     /// </summary>
-    public interface IConfiguration
+    public interface ICustomConfiguration
     {
         /// <summary>
         /// Number of messages processed in parallel.

@@ -11,9 +11,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Autofac" Version="5.1.2" />
+    <PackageReference Include="Autofac" Version="6.2.0" />
     <PackageReference Include="HttpToSocks5Proxy" Version="1.4.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="3.1.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.2" />
     <PackageReference Include="NLog" Version="4.6.8" />
     <PackageReference Include="NLog.Config" Version="4.6.8" />
     <PackageReference Include="NLog.Schema" Version="4.6.8" />
@@ -23,9 +24,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="App.config">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </None>
     <None Update="tgsconvert.py">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

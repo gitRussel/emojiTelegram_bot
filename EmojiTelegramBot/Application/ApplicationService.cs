@@ -21,15 +21,13 @@ namespace EmojiTelegramBot.Application
 	{
 		private ITelegramBotClient _botClient;
 		private ChannelsQueuePubSub _queue;
-		private static Mutex _mut = new Mutex();
-		private static object _chatLock = new object();
-		private IConfiguration _config;
+		private ICustomConfiguration _config;
 		private ILogger _logger;
 		private ILoggerService _loggerSvc;
 
 		public ApplicationService(
 			ILoggerService loggerService,
-			IConfiguration configuration)
+			ICustomConfiguration configuration)
 		{
 			_loggerSvc = loggerService;
 			_logger = _loggerSvc.Create("Application");
