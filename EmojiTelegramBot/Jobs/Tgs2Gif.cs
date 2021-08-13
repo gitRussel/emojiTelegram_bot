@@ -81,7 +81,7 @@ namespace EmojiTelegramBot.Jobs
             }
             catch (Exception ex)
             {
-                Logger.Error($"Error in tgs convertingg \n {ex.Message}");
+                Logger.Error($"Error in tgs converting \n {ex.Message}");
             }
 
             return tcs.Task;

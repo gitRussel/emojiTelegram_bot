@@ -80,10 +80,10 @@ namespace EmojiTelegramBot
 
 		private static string BuildPathToGifDirectory(string source)
 		{
-			//if (string.IsNullOrEmpty(source))
-			//{
-			//	return "";
-			//}
+			if (string.IsNullOrEmpty(source))
+			{
+				return string.Empty;
+			}
 
 			string dirPath = source.Replace('/', Path.DirectorySeparatorChar);
 			if (EmojiTelegramBot.Application.OperatingSystem.IsWindows)

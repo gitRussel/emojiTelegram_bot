@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "EmojiTelegramBot": {
+      "commandName": "Project"
+    },
+    "Docker": {
+      "commandName": "Docker"
+    }
+  }
+}
