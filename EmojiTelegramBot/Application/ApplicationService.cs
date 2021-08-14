@@ -35,10 +35,8 @@ namespace EmojiTelegramBot.Application
 
 			try
 			{
-				_logger.Info($"Config was proxy {_config.ProxyHostName}:{_config.ProxyPort} " + Environment.NewLine +
-				$"threads count {_config.ParallelCount} and path to gif files {_config.PathToGifDirectory}");
-				//TO-DO: убрать прокси, уже работает без него
-				var proxy = new HttpToSocks5Proxy(_config.ProxyHostName, _config.ProxyPort);
+				_logger.Info($"Config was threads count {_config.ParallelCount} and path to gif files {_config.PathToGifDirectory}");
+
 				_botClient = new TelegramBotClient(_config.ApiBotToken) { Timeout = TimeSpan.FromSeconds(20) };
 				_queue = new ChannelsQueuePubSub(_config.ParallelCount, _logger);
 			}
@@ -110,6 +108,7 @@ namespace EmojiTelegramBot.Application
 		private async Task StickerOperationsAsync(Sticker sticker, Chat chat)
 		{
 			IJob job = null;
+			//TO-DO: change args to normal parametrs
 			string[] args;
 			string pathToImportFile = "";
 
@@ -220,6 +219,7 @@ namespace EmojiTelegramBot.Application
 			{
 				_logger.Error($"There was an error sendin. {ex.Message}");
 				_botClient.StartReceiving();
+				await SendWarnMessage($"There was an error sendin. {ex.Message}.", chatId);
 			}
 		}
 

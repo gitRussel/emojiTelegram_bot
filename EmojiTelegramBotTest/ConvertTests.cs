@@ -35,7 +35,7 @@ namespace EmojiTelegramBotTest
         public async Task TgsConvertTest()
         {
             pathToGif = Path.ChangeExtension(pathToTgsFile, ".gif");
-            args = new string[] { pathToTgsFile, pathToGif };
+            args = new string[] { pathToTgsFile, "0" };
             tgs2Gif = new Tgs2Gif(args, loggerMock.Object);
 
             await tgs2Gif.DoJobAsync();
@@ -53,7 +53,7 @@ namespace EmojiTelegramBotTest
         public async Task UnicodeEmojiConvertTest()
         {
             pathToGif = $"{pathToDataDirectory}{"\u00a9".GetHashCode()}.gif";
-            args = new string[] { pathToGif, "\u00a9" };
+            args = new string[] { pathToGif, "\u00a9", "0" };
             unicodeEmoji2Gif = new UnicodeEmoji2Gif(args, loggerMock.Object);
             await unicodeEmoji2Gif.DoJobAsync();
 

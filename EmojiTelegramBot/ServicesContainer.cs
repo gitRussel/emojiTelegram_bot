@@ -60,8 +60,6 @@ namespace EmojiTelegramBot
 				ApiBotToken = config.GetSection("DevConfig:ApiBotToken").Value,
 				ParallelCount = int.TryParse(config.GetSection("DevConfig:ParallelCount").Value, out int count) ? count : 1,
 				PathToGifDirectory = BuildPathToGifDirectory(config.GetSection("DevConfig:PathToGifDirectory").Value),
-				ProxyHostName = config.GetSection("DevConfig:ProxyHostName").Value,
-				ProxyPort = int.TryParse(config.GetSection("DevConfig:ProxyPort").Value, out int port) ? port : 1080,
 			};
 
 			var builder = new ContainerBuilder();
