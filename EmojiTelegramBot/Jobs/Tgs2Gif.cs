@@ -12,11 +12,11 @@ namespace EmojiTelegramBot.Jobs
     public class Tgs2Gif : IJob
     {
         private string[] args;
-        private ILogger Logger;
+        private ILogger logger;
 
         public Tgs2Gif(string[] args, ILogger logger)
         {
-            Logger = logger;
+            this.logger = logger;
             this.args = args;
         }
 
@@ -29,7 +29,7 @@ namespace EmojiTelegramBot.Jobs
 
             if (commandResult == 0)
             {
-                Logger.Info($"File is ready {pathToGif}");
+                logger.Info($"File is ready {pathToGif}");
                 return result;
             }
             else
@@ -40,6 +40,9 @@ namespace EmojiTelegramBot.Jobs
 
         private Task<int> ProcessCommandAsync(string[] args)
         {
+            logger.Info($"Start tgs converting with path to script file {Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)}" +
+                $" and gif directory {args[0]}");
+
             var tcs = new TaskCompletionSource<int>();
             string fileName = "";
             if (Application.OperatingSystem.IsLinux)
@@ -67,8 +70,8 @@ namespace EmojiTelegramBot.Jobs
                 EnableRaisingEvents = true
             };
 
-            process.OutputDataReceived += (s, ea) => Logger.Info(ea.Data);
-            process.ErrorDataReceived += (s, ea) => Logger.Error(ea.Data);
+            process.OutputDataReceived += (s, ea) => logger.Info(ea.Data);
+            process.ErrorDataReceived += (s, ea) => logger.Error(ea.Data);
 
             process.Exited += (s, a) =>
             {
@@ -81,7 +84,7 @@ namespace EmojiTelegramBot.Jobs
             }
             catch (Exception ex)
             {
-                Logger.Error($"Error in tgs converting \n {ex.Message}");
+                logger.Error($"Error in tgs converting \n {ex.Message}");
             }
 
             return tcs.Task;

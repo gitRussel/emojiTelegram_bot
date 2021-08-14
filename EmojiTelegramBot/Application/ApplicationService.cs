@@ -1,7 +1,6 @@
 ﻿using EmojiTelegramBot.Configuration;
 using EmojiTelegramBot.Jobs;
 using EmojiTelegramBot.Logger;
-using MihaZupan;
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -219,7 +218,7 @@ namespace EmojiTelegramBot.Application
 			{
 				_logger.Error($"There was an error sendin. {ex.Message}");
 				_botClient.StartReceiving();
-				await SendWarnMessage($"There was an error sendin. {ex.Message}.", chatId);
+				//await SendWarnMessage($"There was an error sendin. {ex.Message}.", chatId);
 			}
 		}
 

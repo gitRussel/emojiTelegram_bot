@@ -5,7 +5,9 @@ VisualStudioVersion = 16.0.29806.167
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmojiTelegramBot", "EmojiTelegramBot\EmojiTelegramBot.csproj", "{B3EFA47C-9027-4128-9C41-CCB5039CB0A1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmojiTelegramBotTest", "EmojiTelegramBotTest\EmojiTelegramBotTest.csproj", "{71ED7FCB-B0FC-46C3-9452-65C033C1A782}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmojiTelegramBotTest", "EmojiTelegramBotTest\EmojiTelegramBotTest.csproj", "{71ED7FCB-B0FC-46C3-9452-65C033C1A782}"
+EndProject
+Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{9F30AE13-B5FB-4A65-A9CC-485A80C25BD4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{71ED7FCB-B0FC-46C3-9452-65C033C1A782}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{71ED7FCB-B0FC-46C3-9452-65C033C1A782}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{71ED7FCB-B0FC-46C3-9452-65C033C1A782}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F30AE13-B5FB-4A65-A9CC-485A80C25BD4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F30AE13-B5FB-4A65-A9CC-485A80C25BD4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F30AE13-B5FB-4A65-A9CC-485A80C25BD4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F30AE13-B5FB-4A65-A9CC-485A80C25BD4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

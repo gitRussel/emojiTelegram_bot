@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  emojitelegrambot:
+    image: ${DOCKER_REGISTRY-}emojitelegrambot
+    build:
+      context: .
+      dockerfile: EmojiTelegramBot/Dockerfile
