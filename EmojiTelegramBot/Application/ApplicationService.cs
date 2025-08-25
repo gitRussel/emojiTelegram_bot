@@ -7,7 +7,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
-using Telegram.Bot.Args;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.InputFiles;
@@ -18,11 +17,12 @@ namespace EmojiTelegramBot.Application
 	///<inheritdoc cref="IApplicationService"/>
 	public class ApplicationService : IApplicationService
 	{
-		private ITelegramBotClient _botClient;
+		private readonly ITelegramBotClient _botClient;
 		private ChannelsQueuePubSub _queue;
-		private ICustomConfiguration _config;
-		private ILogger _logger;
-		private ILoggerService _loggerSvc;
+		private readonly ICustomConfiguration _config;
+		private readonly ILogger _logger;
+		private readonly ILoggerService _loggerSvc;
+		private readonly CancellationTokenSource _cancellationTokenSource;
 
 		public ApplicationService(
 			ILoggerService loggerService,
@@ -31,6 +31,7 @@ namespace EmojiTelegramBot.Application
 			_loggerSvc = loggerService;
 			_logger = _loggerSvc.Create("Application");
 			_config = configuration;
+			_cancellationTokenSource = new CancellationTokenSource();
 
 			try
 			{
@@ -43,7 +44,6 @@ namespace EmojiTelegramBot.Application
 			{
 				_logger.Error($"Error with bot registration: {ex.Message}");
 			}
-
 		}
 
 		public async Task Run(string[] args)
@@ -52,7 +52,21 @@ namespace EmojiTelegramBot.Application
 
 			_logger.Info($"Started bot with id {me.Id}, named {me.FirstName}.");
 
-			_botClient.OnMessage += async (s, e) => await BotOnMessageReciving(s, e);
+			// v16 event-based receiving
+			_botClient.OnMessage += async (sender, eventArgs) =>
+			{
+				var message = eventArgs.Message;
+				if (message == null)
+					return;
+				var chat = message.Chat;
+				await TextOperationsAsync(message.Text, chat);
+				await StickerOperationsAsync(message.Sticker, chat);
+			};
+			_botClient.OnReceiveError += (sender, eventArgs) =>
+			{
+				var apiEx = eventArgs.ApiRequestException;
+				_logger.Error($"Polling error: {apiEx?.Message}");
+			};
 			_botClient.StartReceiving();
 
 			_queue.RegisterHandler<Tgs2Gif>(async j =>
@@ -80,17 +94,21 @@ namespace EmojiTelegramBot.Application
 
 			Console.WriteLine("Press 'q' to quit the sample.");
 			while (Console.Read() != 'q') ;
-			_botClient.StopReceiving();
+			
+			_cancellationTokenSource.Cancel();
 			_queue.Stop();
 		}
 
-		private async Task BotOnMessageReciving(object sender, MessageEventArgs e)
+		private async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 		{
-			var chat = e.Message.Chat;
+			if (update.Message is not { } message)
+				return;
+
+			var chat = message.Chat;
 			_logger.Info($"Thread {Thread.CurrentThread.ManagedThreadId} has entered the protected area with chatid {chat.Id}.");
 
-			Sticker sticker = e?.Message?.Sticker;
-			string text = e?.Message?.Text;
+			Sticker sticker = message?.Sticker;
+			string text = message?.Text;
 
 			if (sticker == null && text == null)
 			{
@@ -99,9 +117,12 @@ namespace EmojiTelegramBot.Application
 			}
 
 			await TextOperationsAsync(text, chat);
-
 			await StickerOperationsAsync(sticker, chat);
+		}
 
+		private async Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
+		{
+			_logger.Error($"Polling error: {exception.Message}");
 		}
 
 		private async Task StickerOperationsAsync(Sticker sticker, Chat chat)
@@ -217,7 +238,6 @@ namespace EmojiTelegramBot.Application
 			catch (ApiRequestException ex)
 			{
 				_logger.Error($"There was an error sendin. {ex.Message}");
-				_botClient.StartReceiving();
 				//await SendWarnMessage($"There was an error sendin. {ex.Message}.", chatId);
 			}
 		}
