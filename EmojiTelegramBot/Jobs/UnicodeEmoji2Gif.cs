@@ -1,28 +1,36 @@
 ﻿using EmojiTelegramBot.Logger;
 using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace EmojiTelegramBot.Jobs
 {
     /// <inheritdoc cref="IJob"/>
     public class UnicodeEmoji2Gif : IJob
     {
-        private string[] args;
+        private readonly string _outputPath;
+        private readonly string _emoji;
+        private readonly long _chatId;
+        private readonly ILogger _logger;
 
-        private ILogger Logger { get; set; }
-
-        public UnicodeEmoji2Gif(string[] args, ILogger logger)
+        public UnicodeEmoji2Gif(string outputPath, string emoji, long chatId, ILogger logger)
         {
-            this.args = args;
-            Logger = logger;
+            _outputPath = outputPath;
+            _emoji = emoji;
+            _chatId = chatId;
+            _logger = logger;
         }
 
         public async Task<JobResult> DoJobAsync()
         {
-            string pathToGif = Path.ChangeExtension(args[0], ".gif");
-            var result = new JobResult(pathToGif, long.Parse(args[2]));
+            string pathToGif = Path.ChangeExtension(_outputPath, ".gif");
+            var result = new JobResult(pathToGif, _chatId);
+
+            _logger.Info($"Starting Unicode emoji to GIF conversion: {_emoji} -> {pathToGif}");
 
             await Task.Run(() =>
             {
@@ -53,19 +61,18 @@ namespace EmojiTelegramBot.Jobs
                 using var drawFormat = new StringFormat(StringFormatFlags.NoFontFallback);
 
                 drawFormat.Alignment = StringAlignment.Center;
-                gr.DrawString(args[1], drawFont, drawBrush, drawRect, drawFormat);
+                gr.DrawString(_emoji, drawFont, drawBrush, drawRect, drawFormat);
 
                 try
                 {
-                    bm.Save(args[0], System.Drawing.Imaging.ImageFormat.Gif);
+                    bm.Save(_outputPath, ImageFormat.Gif);
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error($"Error when saving file: {ex.Message}");
+                    _logger.Error($"Error when saving file: {ex.Message}");
                 }
             });
             return result;
         }
-
     }
 }

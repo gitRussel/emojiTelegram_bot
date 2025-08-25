@@ -128,8 +128,6 @@ namespace EmojiTelegramBot.Application
 		private async Task StickerOperationsAsync(Sticker sticker, Chat chat)
 		{
 			IJob job = null;
-			//TO-DO: change args to normal parametrs
-			string[] args;
 			string pathToImportFile = "";
 
 			if (sticker == null)
@@ -150,14 +148,12 @@ namespace EmojiTelegramBot.Application
 				if (sticker.IsAnimated)
 				{
 					pathToImportFile += ".tgs";
-					args = new string[] { pathToImportFile, chat.Id.ToString() };
-					job = new Tgs2Gif(args, _logger);
+					job = new Tgs2Gif(pathToImportFile, chat.Id, _logger);
 				}
 				else
 				{
 					pathToImportFile += ".webp";
-					args = new string[] { pathToImportFile, chat.Id.ToString() };
-					job = new Webp2Gif(args);
+					job = new Webp2Gif(new string[] { pathToImportFile, chat.Id.ToString() });
 				}
 
 				const int numberOfRetries = 3;
@@ -189,7 +185,6 @@ namespace EmojiTelegramBot.Application
 				return;
 
 			IJob job = null;
-			string[] args;
 
 			// Search emoji in text.
 			var regex = new Regex(@"\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff]");
@@ -212,8 +207,7 @@ namespace EmojiTelegramBot.Application
 				}
 				else
 				{
-					args = new string[] { pathToGifFile, match.Value, chat.Id.ToString() }; ;
-					job = new UnicodeEmoji2Gif(args, _logger);
+					job = new UnicodeEmoji2Gif(pathToGifFile, match.Value, chat.Id, _logger);
 
 					await _queue.Enqueue(job);
 				}

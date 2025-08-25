@@ -2,26 +2,26 @@
 {
     class Logger : ILogger
     {
-        protected NLog.Logger Log { get; set; }
+        protected Serilog.ILogger Log { get; set; }
 
         public Logger(string name)
         {
-            Log = NLog.LogManager.GetLogger(name);
+            Log = Serilog.Log.ForContext("SourceContext", name);
         }
 
         public void Trace(string message)
         {
-            Log.Trace(message);
+            Log.Verbose(message);
         }
 
         public void Info(string message)
         {
-            Log.Info(message);
+            Log.Information(message);
         }
 
         public void Warn(string message)
         {
-            Log.Warn(message);
+            Log.Warning(message);
         }
 
         public void Error(string message)

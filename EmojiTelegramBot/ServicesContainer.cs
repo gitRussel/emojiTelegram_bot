@@ -1,10 +1,12 @@
-﻿using Autofac;
-using EmojiTelegramBot.Application;
+﻿using EmojiTelegramBot.Application;
 using EmojiTelegramBot.Configuration;
 using EmojiTelegramBot.Logger;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.IO;
 using System.Reflection;
+using Serilog;
 
 namespace EmojiTelegramBot
 {
@@ -14,16 +16,16 @@ namespace EmojiTelegramBot
 	public static class ServicesContainer
 	{
 		/// <summary>
-		/// Container
+		/// Service provider
 		/// </summary>
-		private static Autofac.IContainer _container;
+		private static IServiceProvider _provider;
 
 		/// <inheritdoc cref="IApplicationService"/>
 		public static IApplicationService Application
 		{
 			get
 			{
-				return _container.Resolve<IApplicationService>();
+				return _provider.GetRequiredService<IApplicationService>();
 			}
 		}
 
@@ -32,7 +34,7 @@ namespace EmojiTelegramBot
 		{
 			get
 			{
-				return _container.Resolve<ILoggerService>();
+				return _provider.GetRequiredService<ILoggerService>();
 			}
 		}
 
@@ -41,7 +43,7 @@ namespace EmojiTelegramBot
 		{
 			get
 			{
-				return _container.Resolve<ICustomConfiguration>();
+				return _provider.GetRequiredService<ICustomConfiguration>();
 			}
 		}
 
@@ -50,6 +52,13 @@ namespace EmojiTelegramBot
 		/// </summary>
 		static ServicesContainer()
 		{
+			// Initialize Serilog early
+			Log.Logger = new LoggerConfiguration()
+				.MinimumLevel.Verbose()
+				.Enrich.FromLogContext()
+				.WriteTo.Console()
+				.CreateLogger();
+
 			var config = new ConfigurationBuilder()
 				.SetBasePath(Directory.GetCurrentDirectory())
 				.AddUserSecrets<CustomConfiguration>()
@@ -62,18 +71,13 @@ namespace EmojiTelegramBot
 				PathToGifDirectory = BuildPathToGifDirectory(config.GetSection("DevConfig:PathToGifDirectory").Value),
 			};
 
-			var builder = new ContainerBuilder();
+			var services = new ServiceCollection();
 
-			var lgr = new LoggerService();
+			services.AddSingleton<ICustomConfiguration>(cfg);
+			services.AddSingleton<ILoggerService, LoggerService>();
+			services.AddSingleton<IApplicationService, ApplicationService>();
 
-			builder.RegisterInstance(cfg).As<ICustomConfiguration>();
-			builder.RegisterInstance(lgr).As<ILoggerService>();
-
-			builder.RegisterType<ApplicationService>().As<IApplicationService>().
-					WithParameter("logger", lgr).
-					WithParameter("configuration", cfg);
-
-			_container = builder.Build();
+			_provider = services.BuildServiceProvider();
 		}
 
 		private static string BuildPathToGifDirectory(string source)

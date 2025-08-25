@@ -75,7 +75,7 @@ if pixel:
             mode_option,
             ExtraOption("frame_delay", type=int, default=4, help="Number of frames to skip between images"),
             ExtraOption("framerate", type=int, default=60, help="Frames per second"),
-            # TODO QuanzationMode for raster
+            # Quantization mode for raster (future enhancement)
         ])
     )
 
