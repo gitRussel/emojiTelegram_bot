@@ -56,7 +56,7 @@ def tgs_to_gif(tgs_file, gif_file):
         
         # Create animation object from JSON
         try:
-            animation = lottie.objects.Animation.load(json_data if content.startswith(b'\x1f\x8b') else content)
+            animation = lottie.objects.Animation.loads(decompressed if content.startswith(b'\x1f\x8b') else content)
             print("Animation loaded successfully")
         except Exception as e:
             print(f"Failed to load animation with lottie: {e}")
@@ -81,7 +81,7 @@ def tgs_to_gif(tgs_file, gif_file):
             print(f"Animation: {getattr(animation, 'width', 512)}x{getattr(animation, 'height', 512)}, {fps} fps, {duration} frames")
             
             # Export with proper parameters
-            export_gif(animation, gif_file, fps)
+            export_gif(animation, gif_file, fps=fps)
             
             # Verify output
             if os.path.exists(gif_file) and os.path.getsize(gif_file) > 1000:
